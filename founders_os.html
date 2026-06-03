@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Founder's OS — Life Gamification System</title>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg0:#0f0e0d;--bg1:#1a1915;--bg2:#232220;--bg3:#2c2b27;
+  --t1:#e8e6e0;--t2:#a09e98;--t3:#666460;
+  --border:#2e2c28;--border2:#3a3835;
+  --radius:8px;--radius-lg:12px;
+  --purple:#7F77DD;--teal:#1D9E75;--blue:#378ADD;
+  --coral:#D85A30;--amber:#BA7517;--pink:#D4537E;--green:#639922;
+}
+body{font-family:'SF Mono',ui-monospace,monospace;background:var(--bg0);color:var(--t1);min-height:100vh;font-size:13px}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-thumb{background:rgba(127,119,221,.3);border-radius:99px}
+input,select,textarea{background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius);padding:7px 11px;color:var(--t1);font-family:inherit;font-size:12px;outline:none;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--purple)}
+button{font-family:inherit;cursor:pointer;font-size:12px;border:none;border-radius:var(--radius);padding:6px 14px;transition:opacity .15s}
+button:hover{opacity:.82}
+select option{background:var(--bg1)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useRef,useEffect}=React;
+
+const STAT_META={
+  intellect:{label:"Intellect",desc:"Exams · SAT · IELTS",color:"#7F77DD",icon:"📚"},
+  builder:  {label:"Builder",  desc:"Startup · Projects", color:"#1D9E75",icon:"🚀"},
+  mastery:  {label:"Mastery",  desc:"Coding · Languages", color:"#378ADD",icon:"⚡"},
+  warrior:  {label:"Warrior",  desc:"Fitness · Football", color:"#D85A30",icon:"⚔️"},
+  strategist:{label:"Strategist",desc:"Finance · Planning",color:"#BA7517",icon:"🎯"},
+  gladiator:{label:"Gladiator",desc:"Olympiads · Comps",  color:"#D4537E",icon:"🏆"},
+  vitality: {label:"Vitality", desc:"Sleep · Habits",     color:"#639922",icon:"💚"},
+};
+const CLASSES=[
+  {id:"founder",name:"The Founder",icon:"🚀",bonus:"Builder XP ×1.5",stat:"builder",desc:"Born to build. Every project is a quest, every failure is data."},
+  {id:"scholar",name:"The Scholar",icon:"📚",bonus:"Intellect XP ×1.5",stat:"intellect",desc:"Knowledge compounds. Every exam is a boss fight."},
+  {id:"gladiator",name:"The Gladiator",icon:"⚔️",bonus:"Gladiator XP ×1.5",stat:"gladiator",desc:"Competitions are arenas. Recognition is the prize."},
+  {id:"polymath",name:"The Polymath",icon:"⚡",bonus:"All stats +10%",stat:"all",desc:"Learning everything is the strategy."},
+];
+const TITLES=[[35000,"Immortal"],[20000,"Legend"],[12000,"Elite"],[7000,"Veteran"],[3500,"Expert"],[1500,"Specialist"],[500,"Apprentice"],[0,"Recruit"]];
+const getTitle=xp=>TITLES.find(([t])=>xp>=t)?.[1]||"Recruit";
+const xpNext=lvl=>Math.round(300*Math.pow(1.4,lvl-1));
+
+const INIT={
+  character:{name:"",cls:null,archetype:null,backstory:"",totalXP:0,coins:0},
+  stats:Object.fromEntries(Object.keys(STAT_META).map(k=>[k,{level:1,xp:0,xpToNext:300}])),
+  habits:{
+    daily:[
+      {id:"h1",name:"Plan the day (5 min)",xp:5,stat:"vitality",done:false,phase:1},
+      {id:"h2",name:"1 deep work block (25 min)",xp:10,stat:"intellect",done:false,phase:1},
+      {id:"h3",name:"Log what got done",xp:5,stat:"vitality",done:false,phase:1},
+      {id:"h4",name:"Lights out by midnight",xp:15,stat:"vitality",done:false,phase:1},
+      {id:"h5",name:"15 min coding / skill",xp:10,stat:"mastery",done:false,phase:2},
+      {id:"h6",name:"Log spending today",xp:5,stat:"strategist",done:false,phase:2},
+      {id:"h7",name:"Physical movement (15 min)",xp:15,stat:"warrior",done:false,phase:2},
+      {id:"h8",name:"2-minute rule: do it now",xp:5,stat:"vitality",done:false,phase:3},
+      {id:"h9",name:"Daily win log entry",xp:5,stat:"vitality",done:false,phase:3},
+    ],
+    streak:0,phase:1,revivals:1,
+  },
+  quests:{
+    main:[
+      {id:"a1",label:"Arc 1",name:"The Certificate Grind",desc:"IELTS 7.0+ and SAT 1400+",stat:"intellect",active:true,progress:0},
+      {id:"a2",label:"Arc 2",name:"The First Build",desc:"Idea → MVP → first real user",stat:"builder",active:false,progress:0},
+      {id:"a3",label:"Arc 3",name:"Codebreaker",desc:"Complete a full-stack project",stat:"mastery",active:false,progress:0},
+      {id:"a4",label:"Arc 4",name:"Arena Entry",desc:"Compete in 2+ olympiads/hackathons",stat:"gladiator",active:false,progress:0},
+      {id:"a5",label:"Arc 5",name:"Body of a Founder",desc:"3x workouts/week for 8 weeks",stat:"warrior",active:false,progress:0},
+    ],
+    weekly:[],
+    boss:[
+      {id:"b1",name:"Exam Day",xp:"200–800",date:""},
+      {id:"b2",name:"Hackathon / Olympiad",xp:"150–700",date:""},
+      {id:"b3",name:"University Application",xp:"500",date:""},
+      {id:"b4",name:"Startup Pitch",xp:"300",date:""},
+    ],
+  },
+  startup:{stage:0,stages:["Idea","Validation","MVP","First User","First Revenue","First $100","Scale"],experiments:[],mentor:""},
+  finance:{income:[],expenses:[],warChest:0,savingsGoal:200},
+  mood:[],wins:[],reading:[],heatmap:{},
+  skillTree:{nodes:[
+    {id:"s1",name:"HTML & CSS",unlocked:false,xp:50,deps:[],row:0},
+    {id:"s2",name:"JavaScript",unlocked:false,xp:80,deps:["s1"],row:0},
+    {id:"s3",name:"React",unlocked:false,xp:100,deps:["s2"],row:0},
+    {id:"s4",name:"Full-stack project",unlocked:false,xp:150,deps:["s3"],row:0},
+    {id:"s5",name:"Python",unlocked:false,xp:60,deps:[],row:1},
+    {id:"s6",name:"Data structures",unlocked:false,xp:80,deps:["s5"],row:1},
+    {id:"s7",name:"Algorithms",unlocked:false,xp:100,deps:["s6"],row:1},
+    {id:"s8",name:"LeetCode ×50",unlocked:false,xp:120,deps:["s7"],row:1},
+  ]},
+  distraction:{hp:100,hits:0},
+  season:{name:"Spring 2026",theme:"Foundation — build the base"},
+};
+
+function addXP(prev,statKey,rawAmt){
+  const s=JSON.parse(JSON.stringify(prev));
+  let amt=rawAmt;
+  if(s.character.cls){
+    const cls=CLASSES.find(c=>c.id===s.character.cls);
+    if(cls?.stat===statKey)amt=Math.round(amt*1.5);
+    if(cls?.stat==="all")amt=Math.round(amt*1.1);
+  }
+  const st=s.stats[statKey];
+  st.xp+=amt; s.character.totalXP+=amt;
+  const today=new Date().toISOString().slice(0,10);
+  s.heatmap[today]=(s.heatmap[today]||0)+amt;
+  while(st.xp>=st.xpToNext){st.xp-=st.xpToNext;st.level++;st.xpToNext=xpNext(st.level);}
+  s.character.coins=Math.floor(s.character.totalXP/500);
+  return s;
+}
+
+function applyMut(prev,mut){
+  let s=JSON.parse(JSON.stringify(prev));
+  if(mut.stats){for(const[k,v]of Object.entries(mut.stats)){if(v.xp&&s.stats[k])s=addXP(s,k,v.xp);if(v.level!=null&&s.stats[k])s.stats[k].level=v.level;}}
+  if(mut.character)Object.assign(s.character,mut.character);
+  if(mut.habits){
+    if(mut.habits.streak!=null)s.habits.streak=mut.habits.streak;
+    if(mut.habits.phase!=null)s.habits.phase=mut.habits.phase;
+    if(mut.habits.revivals!=null)s.habits.revivals=mut.habits.revivals;
+    if(mut.habits.daily)s.habits.daily=mut.habits.daily;
+  }
+  if(mut.quests){
+    if(mut.quests.weekly)s.quests.weekly=[...s.quests.weekly,...mut.quests.weekly];
+    if(mut.quests.main)s.quests.main=mut.quests.main;
+  }
+  if(mut.startup)Object.assign(s.startup,mut.startup);
+  if(mut.finance)Object.assign(s.finance,mut.finance);
+  if(mut.mood)s.mood=[...s.mood,...mut.mood];
+  if(mut.wins)s.wins=[...s.wins,...mut.wins];
+  if(mut.season)Object.assign(s.season,mut.season);
+  if(mut.distraction)Object.assign(s.distraction,mut.distraction);
+  return s;
+}
+
+// ── UI ATOMS ──────────────────────────────────────────────────────────────────
+const XPBar=({val,max,color,h=5})=>{
+  const pct=Math.min(100,Math.round((val/max)*100));
+  return <div style={{background:"rgba(128,128,128,.12)",borderRadius:99,height:h,overflow:"hidden"}}>
+    <div style={{width:`${pct}%`,height:"100%",background:color,borderRadius:99,transition:"width .5s"}}/>
+  </div>;
+};
+const Pill=({ch,color="#7F77DD"})=><span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:99,background:color+"22",color,border:`0.5px solid ${color}55`}}>{ch}</span>;
+const Card=({ch,style={}})=><div style={{background:"var(--bg1)",border:"0.5px solid var(--border)",borderRadius:"var(--radius-lg)",padding:"12px 14px",marginBottom:10,...style}}>{ch}</div>;
+const SL=({ch})=><div style={{fontSize:10,fontWeight:500,color:"var(--t3)",letterSpacing:".1em",textTransform:"uppercase",margin:"12px 0 7px"}}>{ch}</div>;
+const Btn=({ch,color="#7F77DD",onClick,style={}})=><button onClick={onClick} style={{background:color,color:"#fff",fontWeight:600,...style}}>{ch}</button>;
+const SI=({style={}})=>({background:"var(--bg2)",border:"0.5px solid var(--border2)",borderRadius:"var(--radius)",padding:"7px 11px",color:"var(--t1)",fontFamily:"'SF Mono',ui-monospace,monospace",fontSize:12,outline:"none",...style});
+
+// ── AGENT ─────────────────────────────────────────────────────────────────────
+function Agent({state,onMut}){
+  const [msgs,setMsgs]=useState([{r:"a",c:"Hey — I'm your System Agent. I have full access to your game state and can modify anything in real time.\n\nTry:\n→ 'Add 50 XP to Builder'\n→ 'What should I focus on this week?'\n→ 'Add a weekly quest: solve 5 LeetCode problems'\n→ 'I just passed my exam, give me XP'\n→ 'Boss prep mode: olympiad in 2 weeks'"}]);
+  const [inp,setInp]=useState("");
+  const [loading,setLoading]=useState(false);
+  const bot=useRef();
+  useEffect(()=>bot.current?.scrollIntoView({behavior:"smooth"}),[msgs]);
+
+  const SYS=`You are the System Agent for "The Founder's Path" — a personal gamification OS for a highly ambitious high school student (16–17) whose #1 goals are: 1) launch a startup, 2) get into a top university abroad, 3) win olympiads/competitions for recognition and prizes.
+
+FULL STATE:
+${JSON.stringify(state,null,2)}
+
+CAPABILITIES:
+1. Answer questions about the system, stats, progress
+2. Give sharp, honest strategic advice
+3. Make state changes via JSON mutation blocks:
+\`\`\`json
+{"mutation": {only changed fields}}
+\`\`\`
+
+MUTATION EXAMPLES:
+- Add XP: {"stats":{"builder":{"xp":50}}}
+- Weekly quest: {"quests":{"weekly":[{"id":"w${Date.now()}","name":"...","xp":35,"stat":"mastery","done":false}]}}
+- Streak: {"habits":{"streak":5}}
+- Mood: {"mood":[{"date":"${new Date().toISOString().slice(0,10)}","val":4}]}
+- Win: {"wins":[{"date":"${new Date().toISOString().slice(0,10)}","text":"..."}]}
+- Startup stage: {"startup":{"stage":2}}
+- Experiment: {"startup":{"experiments":[{"date":"${new Date().toISOString().slice(0,10)}","idea":"...","result":"...","xp":40}]}}
+- Season update: {"season":{"name":"Summer 2026","theme":"..."}}
+- Boss prep: reduce quest XP, add recovery quests, set habits phase lower
+- Character: {"character":{"epithet":"The Relentless"}}
+
+RULES:
+- Max 4 sentences unless making changes
+- Be personal — reference his specific stats/numbers/quests
+- Coach voice: sharp, direct, believes in him, no sugarcoating
+- Only apply XP the user explicitly earned or requested
+- After any mutation, briefly confirm what changed`;
+
+  async function send(){
+    if(!inp.trim()||loading)return;
+    const txt=inp.trim();setInp("");
+    setMsgs(m=>[...m,{r:"u",c:txt}]);
+    setLoading(true);
+    try{
+      const res=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          model:"claude-sonnet-4-20250514",max_tokens:1000,system:SYS,
+          messages:[...msgs.slice(-10).map(m=>({role:m.r==="u"?"user":"assistant",content:m.c})),{role:"user",content:txt}]
+        })
+      });
+      const data=await res.json();
+      const text=data.content?.[0]?.text||"API error.";
+      const m=text.match(/```json\n([\s\S]*?)\n```/);
+      if(m){try{const p=JSON.parse(m[1]);if(p.mutation)onMut(p.mutation);}catch(e){}}
+      setMsgs(m=>[...m,{r:"a",c:text.replace(/```json[\s\S]*?```/g,"[✓ System updated]")}]);
+    }catch(e){setMsgs(m=>[...m,{r:"a",c:"Network error. Try again."}]);}
+    setLoading(false);
+  }
+
+  const QUICK=["What should I focus on this week?","Add 50 XP to Builder stat","I just completed an exam — give me XP","What's my weakest stat?","Boss prep: exam in 2 weeks","Add weekly quest: read 50 IELTS vocab words"];
+
+  return <div style={{display:"flex",flexDirection:"column",height:"calc(100vh - 220px)",minHeight:360}}>
+    <div style={{flex:1,overflowY:"auto",paddingBottom:8}}>
+      {msgs.map((m,i)=><div key={i} style={{marginBottom:10,display:"flex",flexDirection:m.r==="u"?"row-reverse":"row",gap:7,alignItems:"flex-start"}}>
+        {m.r==="a"&&<div style={{width:24,height:24,borderRadius:"50%",background:"linear-gradient(135deg,#7F77DD,#1D9E75)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,flexShrink:0,marginTop:1}}>⚡</div>}
+        <div style={{maxWidth:"82%",padding:"8px 12px",background:m.r==="u"?"#7F77DD18":"var(--bg2)",border:`0.5px solid ${m.r==="u"?"#7F77DD44":"var(--border)"}`,borderRadius:m.r==="u"?"10px 10px 2px 10px":"10px 10px 10px 2px",fontSize:12,lineHeight:1.7,color:"var(--t1)",whiteSpace:"pre-wrap"}}>{m.c}</div>
+      </div>)}
+      {loading&&<div style={{display:"flex",gap:7,alignItems:"center",padding:"5px 0"}}>
+        <div style={{width:24,height:24,borderRadius:"50%",background:"linear-gradient(135deg,#7F77DD,#1D9E75)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10}}>⚡</div>
+        <span style={{fontSize:11,color:"var(--t3)"}}>thinking…</span>
+      </div>}
+      <div ref={bot}/>
+    </div>
+    <div style={{borderTop:"0.5px solid var(--border)",paddingTop:10}}>
+      <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:8}}>
+        {QUICK.map(q=><button key={q} onClick={()=>setInp(q)} style={{background:"#7F77DD11",border:"0.5px solid #7F77DD44",color:"#7F77DD",borderRadius:99,fontSize:10,padding:"3px 9px",cursor:"pointer"}}>{q}</button>)}
+      </div>
+      <div style={{display:"flex",gap:7}}>
+        <input value={inp} onChange={e=>setInp(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()} placeholder="Command the system or ask anything…" style={SI({flex:1})}/>
+        <Btn ch="Send" onClick={send} color="#7F77DD" style={{padding:"7px 18px",opacity:loading?.5:1}}/>
+      </div>
+    </div>
+  </div>;
+}
+
+// ── HEATMAP ───────────────────────────────────────────────────────────────────
+function Heatmap({heatmap}){
+  const today=new Date();
+  const days=Array.from({length:90},(_,i)=>{const d=new Date(today);d.setDate(d.getDate()-(89-i));const k=d.toISOString().slice(0,10);return{k,v:heatmap[k]||0};});
+  const mx=Math.max(...days.map(d=>d.v),1);
+  return <div>
+    <div style={{fontSize:10,color:"var(--t3)",marginBottom:5}}>Last 90 days</div>
+    <div style={{display:"flex",flexWrap:"wrap",gap:2}}>
+      {days.map(d=><div key={d.k} title={`${d.k}: ${d.v} XP`} style={{width:9,height:9,borderRadius:2,background:d.v===0?"rgba(128,128,128,.1)":`rgba(127,119,221,${(.12+.88*(d.v/mx)).toFixed(2)})`}}/>)}
+    </div>
+    <div style={{display:"flex",gap:3,alignItems:"center",marginTop:4}}>
+      <span style={{fontSize:9,color:"var(--t3)"}}>less</span>
+      {[.1,.3,.55,.8,1].map((o,i)=><div key={i} style={{width:9,height:9,borderRadius:2,background:`rgba(127,119,221,${o})`}}/>)}
+      <span style={{fontSize:9,color:"var(--t3)"}}>more</span>
+    </div>
+  </div>;
+}
+
+// ── STARTUP TREE ──────────────────────────────────────────────────────────────
+function StartupTree({startup}){
+  return <div style={{overflowX:"auto"}}>
+    <div style={{display:"flex",alignItems:"center",minWidth:520,paddingBottom:4}}>
+      {startup.stages.map((s,i)=><React.Fragment key={i}>
+        <div style={{flexShrink:0,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+          <div style={{width:32,height:32,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:i<startup.stage?12:10,background:i<startup.stage?"#1D9E75":i===startup.stage?"#1D9E7520":"rgba(128,128,128,.1)",border:`1.5px solid ${i<=startup.stage?"#1D9E75":"rgba(128,128,128,.2)"}`,color:i<startup.stage?"#fff":i===startup.stage?"#1D9E75":"var(--t3)"}}>
+            {i<startup.stage?"✓":i+1}
+          </div>
+          <div style={{fontSize:9,color:i===startup.stage?"#1D9E75":"var(--t3)",textAlign:"center",width:68,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{s}</div>
+        </div>
+        {i<startup.stages.length-1&&<div style={{flex:1,height:1.5,background:i<startup.stage?"#1D9E75":"rgba(128,128,128,.12)",minWidth:12}}/>}
+      </React.Fragment>)}
+    </div>
+  </div>;
+}
+
+// ── SKILL TREE ────────────────────────────────────────────────────────────────
+function SkillTree({tree,onUnlock}){
+  return <div>
+    {[0,1].map(row=><div key={row} style={{marginBottom:row===0?10:0}}>
+      <div style={{fontSize:9,color:"var(--t3)",marginBottom:5,letterSpacing:".06em"}}>{row===0?"WEB / FRONTEND":"CS / ALGORITHMS"}</div>
+      <div style={{display:"flex",gap:7,overflowX:"auto"}}>
+        {tree.nodes.filter(n=>n.row===row).map(n=>{
+          const ok=n.deps.every(d=>tree.nodes.find(x=>x.id===d)?.unlocked);
+          return <div key={n.id} onClick={()=>ok&&!n.unlocked&&onUnlock(n.id)} style={{flexShrink:0,width:105,padding:"8px 10px",borderRadius:"var(--radius)",border:`0.5px solid ${n.unlocked?"#7F77DD":"var(--border2)"}`,background:n.unlocked?"#7F77DD15":"var(--bg2)",cursor:ok&&!n.unlocked?"pointer":"default",opacity:!ok&&!n.unlocked?.35:1}}>
+            <div style={{fontSize:11,fontWeight:500,color:n.unlocked?"#7F77DD":"var(--t1)",marginBottom:2}}>{n.name}</div>
+            <div style={{fontSize:9,color:"var(--t3)"}}>{n.unlocked?"✓ done":`+${n.xp} XP`}</div>
+          </div>;
+        })}
+      </div>
+    </div>)}
+  </div>;
+}
+
+// ── MAIN APP ──────────────────────────────────────────────────────────────────
+function App(){
+  const [S,setS]=useState(()=>{try{const d=localStorage.getItem("founders_os");return d?JSON.parse(d):INIT;}catch(e){return INIT;}});
+  const [tab,setTab]=useState("dashboard");
+  const [showCls,setShowCls]=useState(false);
+  const [backstory,setBackstory]=useState("");
+  const [editBS,setEditBS]=useState(false);
+  const [winTxt,setWinTxt]=useState("");
+  const [readTit,setReadTit]=useState(""); const [readStat,setReadStat]=useState("intellect");
+  const [expIdea,setExpIdea]=useState(""); const [expRes,setExpRes]=useState("");
+  const [mentorInp,setMentorInp]=useState("");
+  const [incD,setIncD]=useState(""); const [incA,setIncA]=useState("");
+  const [expD,setExpD]=useState(""); const [expA,setExpA]=useState("");
+  const [moodV,setMoodV]=useState(3);
+  const [nqName,setNqName]=useState(""); const [nqXP,setNqXP]=useState("30"); const [nqStat,setNqStat]=useState("intellect");
+
+  useEffect(()=>{try{localStorage.setItem("founders_os",JSON.stringify(S));}catch(e){}},[S]);
+
+  const avgLvl=Math.floor(Object.values(S.stats).reduce((s,v)=>s+v.level,0)/7);
+  const title=getTitle(S.character.totalXP);
+  const active=S.habits.daily.filter(h=>h.phase<=S.habits.phase);
+  const doneN=active.filter(h=>h.done).length;
+  const totInc=S.finance.income.reduce((s,i)=>s+(parseFloat(i.amt)||0),0);
+  const totExp=S.finance.expenses.reduce((s,i)=>s+(parseFloat(i.amt)||0),0);
+
+  function mut(fn){setS(p=>fn(p));}
+  function xp(k,a){setS(p=>addXP(p,k,a));}
+  function onMut(m){setS(p=>applyMut(p,m));}
+
+  function doHabit(id){
+    const h=S.habits.daily.find(x=>x.id===id);
+    if(!h||h.done||h.phase>S.habits.phase)return;
+    setS(p=>{let s=addXP(p,h.stat,h.xp);s.habits.daily=s.habits.daily.map(x=>x.id===id?{...x,done:true}:x);return s;});
+  }
+  function doWeekly(id){
+    const q=S.quests.weekly.find(x=>x.id===id);
+    if(!q||q.done)return;
+    setS(p=>{let s=addXP(p,q.stat||"intellect",q.xp||30);s.quests.weekly=s.quests.weekly.map(x=>x.id===id?{...x,done:true}:x);return s;});
+  }
+  function unlockSkill(id){
+    const n=S.skillTree.nodes.find(x=>x.id===id);
+    if(!n)return;
+    setS(p=>{let s=addXP(p,"mastery",n.xp);s.skillTree.nodes=s.skillTree.nodes.map(x=>x.id===id?{...x,unlocked:true}:x);return s;});
+  }
+  function advStart(){
+    const xpMap=[0,100,200,400,600,800,1000];
+    const a=xpMap[Math.min(S.startup.stage+1,6)];
+    setS(p=>{let s=addXP(p,"builder",a);s.startup.stage=Math.min(s.startup.stage+1,s.startup.stages.length-1);return s;});
+  }
+  function hitDistract(){
+    setS(p=>{
+      let s=JSON.parse(JSON.stringify(p));
+      s.distraction.hits++;s.distraction.hp=Math.max(0,s.distraction.hp-10);
+      if(s.distraction.hp<=0){s=addXP(s,"vitality",200);s.distraction={hp:100,hits:0};}
+      else s=addXP(s,"vitality",5);
+      return s;
+    });
+  }
+
+  const TABS=["dashboard","character","quests","habits","startup","finance","wellbeing","analytics","agent"];
+  const TLABELS={"dashboard":"Dashboard","character":"Character","quests":"Quests","habits":"Habits","startup":"Startup","finance":"Finance","wellbeing":"Wellbeing","analytics":"Analytics","agent":"⚡ Agent"};
+
+  return <div style={{background:"var(--bg0)",minHeight:"100vh"}}>
+    {/* Header */}
+    <div style={{borderBottom:"0.5px solid var(--border)",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",background:"var(--bg1)",position:"sticky",top:0,zIndex:10}}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}>
+        <div style={{width:28,height:28,borderRadius:"50%",background:"linear-gradient(135deg,#7F77DD,#1D9E75)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12}}>⚡</div>
+        <div>
+          <div style={{fontSize:12,fontWeight:500,letterSpacing:".06em"}}>FOUNDER'S OS</div>
+          <div style={{fontSize:9,color:"var(--t3)",letterSpacing:".08em"}}>{S.season.name.toUpperCase()} · {S.season.theme}</div>
+        </div>
+      </div>
+      <div style={{display:"flex",gap:14,alignItems:"center"}}>
+        <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"var(--t3)"}}>LVL</div><div style={{fontSize:15,fontWeight:500,color:"#7F77DD"}}>{avgLvl}</div></div>
+        <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"var(--t3)"}}>XP</div><div style={{fontSize:11,fontWeight:500,color:"#BA7517"}}>{S.character.totalXP.toLocaleString()}</div></div>
+        <div style={{textAlign:"right"}}><div style={{fontSize:9,color:"var(--t3)"}}>COINS</div><div style={{fontSize:11,fontWeight:500,color:"#1D9E75"}}>{S.character.coins}</div></div>
+        <Pill ch={title} color="#7F77DD"/>
+      </div>
+    </div>
+
+    {/* Nav */}
+    <div style={{display:"flex",overflowX:"auto",borderBottom:"0.5px solid var(--border)",background:"var(--bg1)"}}>
+      {TABS.map(t=><button key={t} onClick={()=>setTab(t)} style={{background:"none",border:"none",borderBottom:`2px solid ${tab===t?"#7F77DD":"transparent"}`,color:tab===t?"var(--t1)":"var(--t3)",padding:"8px 12px",fontSize:10,fontWeight:500,letterSpacing:".05em",whiteSpace:"nowrap",cursor:"pointer",transition:"all .15s"}}>{TLABELS[t].toUpperCase()}</button>}
+    </div>
+
+    {/* Main */}
+    <div style={{padding:14,maxWidth:820,margin:"0 auto"}}>
+
+      {/* DASHBOARD */}
+      {tab==="dashboard"&&<div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:7,marginBottom:12}}>
+          {[{l:"Streak",v:`${S.habits.streak}d`,c:"#1D9E75"},{l:"Done today",v:`${doneN}/${active.length}`,c:"#7F77DD"},{l:"Revivals",v:S.habits.revivals,c:"#D4537E"},{l:"Phase",v:S.habits.phase,c:"#BA7517"}].map(m=><div key={m.l} style={{background:"var(--bg1)",border:"0.5px solid var(--border)",borderRadius:"var(--radius)",padding:"9px 11px"}}>
+            <div style={{fontSize:9,color:"var(--t3)",letterSpacing:".08em",marginBottom:2}}>{m.l.toUpperCase()}</div>
+            <div style={{fontSize:15,fontWeight:500,color:m.c}}>{m.v}</div>
+          </div>)}
+        </div>
+
+        <Card ch={<div>
+          <SL ch="Stats"/>
+          {Object.entries(S.stats).map(([k,v])=><div key={k} style={{marginBottom:8}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                <span style={{fontSize:11}}>{STAT_META[k].icon}</span>
+                <span style={{fontSize:11,fontWeight:500}}>{STAT_META[k].label}</span>
+                <span style={{fontSize:10,color:"var(--t3)"}}>{STAT_META[k].desc}</span>
+              </div>
+              <div style={{display:"flex",gap:5,alignItems:"center"}}>
+                <span style={{fontSize:9,color:"var(--t3)"}}>{v.xp}/{v.xpToNext}</span>
+                <Pill ch={`Lvl ${v.level}`} color={STAT_META[k].color}/>
+              </div>
+            </div>
+            <XPBar val={v.xp} max={v.xpToNext} color={STAT_META[k].color}/>
+          </div>)}
+        </div>}/>
+
+        <Card ch={<div>
+          <SL ch="Today's habits"/>
+          {active.map(h=><div key={h.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+            <div onClick={()=>doHabit(h.id)} style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${h.done?"#1D9E75":"var(--border2)"}`,background:h.done?"#1D9E75":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff"}}>{h.done?"✓":""}</div>
+            <span style={{fontSize:11,flex:1,color:h.done?"var(--t3)":"var(--t1)",textDecoration:h.done?"line-through":"none"}}>{h.name}</span>
+            <Pill ch={`+${h.xp}`} color={STAT_META[h.stat].color}/>
+          </div>)}
+        </div>}/>
+
+        <Card ch={<div><SL ch="Activity"/><Heatmap heatmap={S.heatmap}/></div>}/>
+
+        <Card ch={<div>
+          <SL ch="Active arcs"/>
+          {S.quests.main.filter(q=>q.active).map(q=><div key={q.id} style={{marginBottom:9}}>
+            <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:2}}>
+              <Pill ch={q.label} color={STAT_META[q.stat].color}/>
+              <span style={{fontSize:11,fontWeight:500}}>{q.name}</span>
+              <span style={{fontSize:9,color:"var(--t3)",marginLeft:"auto"}}>{q.progress}%</span>
+            </div>
+            <XPBar val={q.progress} max={100} color={STAT_META[q.stat].color} h={4}/>
+          </div>)}
+        </div>}/>
+
+        <Card ch={<div>
+          <SL ch="Distraction boss"/>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:10,marginBottom:3}}>
+            <span>📵 Boss HP</span><span style={{color:"#D85A30"}}>{S.distraction.hp}/100</span>
+          </div>
+          <XPBar val={100-S.distraction.hp} max={100} color="#D85A30" h={5}/>
+          <div style={{fontSize:10,color:"var(--t2)",margin:"6px 0 8px",lineHeight:1.6}}>Each study session without your phone = 1 hit (−10 HP, +5 Vitality XP). Defeat = +200 XP bonus.</div>
+          <Btn ch="⚔️ Hit — study session without phone" onClick={hitDistract} color="#D85A30" style={{fontSize:10}}/>
+        </div>}/>
+      </div>}
+
+      {/* CHARACTER */}
+      {tab==="character"&&<div>
+        {!S.character.cls?<div>
+          <SL ch="Choose your class — permanent"/>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9}}>
+            {CLASSES.map(c=><Card key={c.id} ch={<div>
+              <div style={{fontSize:28,marginBottom:5}}>{c.icon}</div>
+              <div style={{fontSize:12,fontWeight:500,marginBottom:2}}>{c.name}</div>
+              <div style={{fontSize:10,color:"#1D9E75",marginBottom:3}}>{c.bonus}</div>
+              <div style={{fontSize:10,color:"var(--t2)",marginBottom:8}}>{c.desc}</div>
+              <Btn ch="Select class" onClick={()=>setS(p=>({...p,character:{...p.character,cls:c.id,archetype:c.name}}))} color="#7F77DD" style={{fontSize:10,width:"100%"}}/>
+            </div>}/>)}
+          </div>
+        </div>:<div>
+          <Card ch={<div style={{display:"flex",alignItems:"center",gap:14}}>
+            <div style={{fontSize:32}}>{CLASSES.find(c=>c.id===S.character.cls)?.icon}</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:9,color:"var(--t3)",letterSpacing:".1em"}}>CLASS</div>
+              <div style={{fontSize:14,fontWeight:500}}>{S.character.archetype}</div>
+              <div style={{fontSize:10,color:"#1D9E75"}}>{CLASSES.find(c=>c.id===S.character.cls)?.bonus}</div>
+            </div>
+            <div style={{textAlign:"right"}}>
+              <div style={{fontSize:9,color:"var(--t3)",letterSpacing:".1em"}}>TITLE</div>
+              <div style={{fontSize:13,fontWeight:500,color:"#7F77DD"}}>{title}</div>
+            </div>
+          </div>}/>
+
+          <Card ch={<div>
+            <SL ch="Origin story"/>
+            {S.character.backstory?<div>
+              <div style={{fontSize:11,lineHeight:1.75,fontStyle:"italic",borderLeft:"2px solid #7F77DD",paddingLeft:10,marginBottom:8}}>"{S.character.backstory}"</div>
+              <Btn ch="Edit" onClick={()=>{setBackstory(S.character.backstory);setEditBS(true);}} color="var(--bg3)" style={{fontSize:10}}/>
+            </div>:editBS?<div>
+              <textarea value={backstory} onChange={e=>setBackstory(e.target.value)} placeholder="I am [name]. I want to [goal] because [reason]." style={{...SI(),height:72,resize:"vertical",width:"100%",marginBottom:7}}/>
+              <Btn ch="Save" onClick={()=>{setS(p=>({...p,character:{...p.character,backstory}}));setEditBS(false);}} color="#7F77DD" style={{fontSize:10}}/>
+            </div>:<Btn ch="Write your origin story" onClick={()=>setEditBS(true)} color="#7F77DD" style={{fontSize:10}}/>}
+          </div>}/>
+
+          <Card ch={<div><SL ch="Skill tree — mastery stat"/><SkillTree tree={S.skillTree} onUnlock={unlockSkill}/></div>}/>
+
+          <Card ch={<div>
+            <SL ch="Title ladder"/>
+            {TITLES.map(([xpReq,t])=><div key={t} style={{display:"flex",gap:8,alignItems:"center",padding:"4px 0",borderBottom:"0.5px solid var(--border)"}}>
+              <div style={{width:8,height:8,borderRadius:"50%",background:S.character.totalXP>=xpReq?"#7F77DD":"rgba(128,128,128,.2)",flexShrink:0}}/>
+              <span style={{fontSize:11,flex:1,fontWeight:title===t?500:400,color:S.character.totalXP>=xpReq?"var(--t1)":"var(--t3)"}}>{t}</span>
+              <span style={{fontSize:9,color:"var(--t3)"}}>{xpReq.toLocaleString()} XP</span>
+            </div>)}
+          </div>}/>
+        </div>}
+      </div>}
+
+      {/* QUESTS */}
+      {tab==="quests"&&<div>
+        <Card ch={<div>
+          <SL ch="Main arcs"/>
+          {S.quests.main.map(q=><div key={q.id} style={{marginBottom:11,paddingBottom:11,borderBottom:"0.5px solid var(--border)"}}>
+            <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:2}}>
+              <Pill ch={q.label} color={STAT_META[q.stat].color}/>
+              <span style={{fontSize:11,fontWeight:500,color:q.active?"var(--t1)":"var(--t3)"}}>{q.name}</span>
+              {!q.active&&<Btn ch="Activate" onClick={()=>mut(p=>{const s=JSON.parse(JSON.stringify(p));s.quests.main.find(x=>x.id===q.id).active=true;return s;})} color="var(--bg3)" style={{marginLeft:"auto",fontSize:9,padding:"3px 9px"}}/>}
+            </div>
+            <div style={{fontSize:10,color:"var(--t2)",marginBottom:4}}>{q.desc}</div>
+            {q.active&&<div>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:9,color:"var(--t3)",marginBottom:2}}><span>Progress</span><span>{q.progress}%</span></div>
+              <XPBar val={q.progress} max={100} color={STAT_META[q.stat].color} h={4}/>
+              <div style={{display:"flex",gap:5,marginTop:5}}>
+                {[10,25,50].map(n=><Btn key={n} ch={`+${n}%`} onClick={()=>mut(p=>{const s=JSON.parse(JSON.stringify(p));const a=s.quests.main.find(x=>x.id===q.id);a.progress=Math.min(100,a.progress+n);return s;})} color={STAT_META[q.stat].color+"88"} style={{fontSize:9,padding:"3px 9px"}}/>)}
+              </div>
+            </div>}
+          </div>)}
+        </div>}/>
+
+        <Card ch={<div>
+          <SL ch="Weekly side quests"/>
+          {S.quests.weekly.length===0&&<div style={{fontSize:10,color:"var(--t3)",marginBottom:10}}>No weekly quests yet. Add one below or ask the ⚡ Agent.</div>}
+          {S.quests.weekly.map(q=><div key={q.id} style={{display:"flex",alignItems:"center",gap:7,marginBottom:6}}>
+            <div onClick={()=>doWeekly(q.id)} style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${q.done?"#1D9E75":"var(--border2)"}`,background:q.done?"#1D9E75":"transparent",cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff"}}>{q.done?"✓":""}</div>
+            <span style={{fontSize:11,flex:1,color:q.done?"var(--t3)":"var(--t1)",textDecoration:q.done?"line-through":"none"}}>{q.name}</span>
+            <Pill ch={`+${q.xp}`} color={STAT_META[q.stat||"intellect"].color}/>
+          </div>)}
+          <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr auto",gap:5,marginTop:10,alignItems:"center"}}>
+            <input value={nqName} onChange={e=>setNqName(e.target.value)} placeholder="Quest name" style={SI()}/>
+            <select value={nqStat} onChange={e=>setNqStat(e.target.value)} style={SI()}>
+              {Object.entries(STAT_META).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
+            </select>
+            <input value={nqXP} onChange={e=>setNqXP(e.target.value)} placeholder="XP" type="number" style={SI()}/>
+            <Btn ch="Add" onClick={()=>{if(!nqName.trim())return;mut(p=>{const s=JSON.parse(JSON.stringify(p));s.quests.weekly.push({id:"w"+Date.now(),name:nqName,xp:parseInt(nqXP)||30,stat:nqStat,done:false});return s;});setNqName("");}} color="#1D9E75" style={{padding:"7px 13px"}}/>
+          </div>
+        </div>}/>
+
+        <Card ch={<div>
+          <SL ch="Boss fights"/>
+          {S.quests.boss.map(b=><div key={b.id} style={{display:"flex",alignItems:"center",gap:9,marginBottom:7,paddingBottom:7,borderBottom:"0.5px solid var(--border)"}}>
+            <div style={{width:30,height:30,borderRadius:"var(--radius)",background:"#D85A3012",border:"0.5px solid #D85A3030",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:12}}>⚔️</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:11,fontWeight:500}}>{b.name}</div>
+              <input value={b.date||""} onChange={e=>mut(p=>{const s=JSON.parse(JSON.stringify(p));s.quests.boss.find(x=>x.id===b.id).date=e.target.value;return s;})} placeholder="Schedule date…" style={{...SI(),width:120,marginTop:3,fontSize:10}}/>
+            </div>
+            <Pill ch={`${b.xp} XP`} color="#D85A30"/>
+          </div>)}
+        </div>}/>
+      </div>}
+
+      {/* HABITS */}
+      {tab==="habits"&&<div>
+        <Card ch={<div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:9}}>
+            <SL ch="Habit phase" style={{margin:0}}/>
+            <div style={{display:"flex",gap:5}}>
+              {[1,2,3].map(p=><Btn key={p} ch={`Phase ${p}`} onClick={()=>mut(s=>({...s,habits:{...s.habits,phase:p}}))} color={S.habits.phase===p?"#7F77DD":"var(--bg3)"} style={{fontSize:9,padding:"4px 11px"}}/>)}
+            </div>
+          </div>
+          <div style={{fontSize:10,color:"var(--t2)",marginBottom:10,lineHeight:1.6}}>Phase 1: 4 core habits (wk 1–2) · Phase 2: +3 more (wk 3–4) · Phase 3: full stack</div>
+          {S.habits.daily.map(h=><div key={h.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:7,opacity:h.phase>S.habits.phase?.35:1}}>
+            <div onClick={()=>doHabit(h.id)} style={{width:17,height:17,borderRadius:4,border:`1.5px solid ${h.done?"#1D9E75":"var(--border2)"}`,background:h.done?"#1D9E75":"transparent",cursor:h.phase<=S.habits.phase?"pointer":"default",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#fff"}}>{h.done?"✓":""}</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:11,color:h.done?"var(--t3)":"var(--t1)",textDecoration:h.done?"line-through":"none"}}>{h.name}</div>
+              <div style={{fontSize:9,color:STAT_META[h.stat].color}}>{STAT_META[h.stat].label}</div>
+            </div>
+            <Pill ch={`+${h.xp}`} color={h.phase>S.habits.phase?"rgba(128,128,128,.3)":"#BA7517"}/>
+          </div>)}
+        </div>}/>
+
+        <Card ch={<div>
+          <SL ch="Streak & protection"/>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:9}}>
+            <div style={{background:"var(--bg2)",borderRadius:"var(--radius)",padding:"9px 11px"}}>
+              <div style={{fontSize:9,color:"var(--t3)",marginBottom:2}}>STREAK</div>
+              <div style={{fontSize:18,fontWeight:500,color:"#1D9E75"}}>{S.habits.streak} days</div>
+            </div>
+            <div style={{background:"var(--bg2)",borderRadius:"var(--radius)",padding:"9px 11px"}}>
+              <div style={{fontSize:9,color:"var(--t3)",marginBottom:2}}>REVIVALS</div>
+              <div style={{fontSize:18,fontWeight:500,color:"#D4537E"}}>{S.habits.revivals}</div>
+            </div>
+          </div>
+          <div style={{fontSize:10,color:"var(--t2)",marginBottom:9,lineHeight:1.65}}>One free rest day/week (declare evening before). Missing = 0 XP, never negative. Revivals protect streaks when life interrupts.</div>
+          <div style={{display:"flex",gap:6}}>
+            <Btn ch="+1 streak day" onClick={()=>mut(p=>({...p,habits:{...p.habits,streak:p.habits.streak+1}}))} color="#1D9E75" style={{fontSize:10}}/>
+            <Btn ch="Use revival" onClick={()=>mut(p=>({...p,habits:{...p.habits,streak:0},revivals:Math.max(0,p.revivals-1)}))} color="#D85A30" style={{fontSize:10,opacity:S.habits.revivals>0?1:.4}}/>
+            <Btn ch="Earn revival" onClick={()=>mut(p=>({...p,habits:{...p.habits,revivals:p.habits.revivals+1}}))} color="var(--bg3)" style={{fontSize:10}}/>
+          </div>
+        </div>}/>
+
+        <Card ch={<div>
+          <SL ch='"Just start" mechanic'/>
+          <div style={{fontSize:10,color:"var(--t2)",marginBottom:8,lineHeight:1.65}}>Start any quest for just 5 minutes → earn 25% XP → streak protected. Removes all-or-nothing paralysis.</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+            {Object.entries(STAT_META).map(([k,v])=><Btn key={k} ch={`${v.icon} +3 XP`} onClick={()=>xp(k,3)} color={v.color+"99"} style={{fontSize:9,padding:"4px 9px"}}/>)}
+          </div>
+        </div>}/>
+      </div>}
+
+      {/* STARTUP */}
+      {tab==="startup"&&<div>
+        <Card ch={<div>
+          <SL ch="Milestone tree"/>
+          <StartupTree startup={S.startup}/>
+          <div style={{marginTop:11,display:"flex",gap:7,alignItems:"center"}}>
+            <Btn ch="Advance to next stage" onClick={advStart} color="#1D9E75" style={{fontSize:10}}/>
+            <span style={{fontSize:10,color:"var(--t3)"}}>Current: {S.startup.stages[S.startup.stage]}</span>
+          </div>
+        </div>}/>
+
+        <Card ch={<div>
+          <SL ch="Experiment log (+40 Builder XP each)"/>
+          <div style={{fontSize:10,color:"var(--t2)",marginBottom:7,lineHeight:1.6}}>Every experiment earns XP — win or lose. Failure is data, not defeat.</div>
+          <textarea value={expIdea} onChange={e=>setExpIdea(e.target.value)} placeholder="Hypothesis / experiment idea…" style={{...SI(),height:52,resize:"vertical",width:"100%",marginBottom:5}}/>
+          <textarea value={expRes} onChange={e=>setExpRes(e.target.value)} placeholder="Result / what you learned…" style={{...SI(),height:40,resize:"vertical",width:"100%",marginBottom:6}}/>
+          <Btn ch="Log experiment (+40 XP)" onClick={()=>{if(!expIdea.trim())return;setS(p=>{let s=addXP(p,"builder",40);s.startup.experiments=[...s.startup.experiments,{date:new Date().toISOString().slice(0,10),idea:expIdea,result:expRes,xp:40}];return s;});setExpIdea("");setExpRes("");}} color="#1D9E75" style={{fontSize:10}}/>
+          <div style={{marginTop:9}}>
+            {S.startup.experiments.slice(-4).reverse().map((e,i)=><div key={i} style={{marginBottom:6,padding:"7px 9px",borderLeft:"2px solid #1D9E75",background:"#1D9E7508",borderRadius:"0 6px 6px 0"}}>
+              <div style={{fontSize:11,fontWeight:500}}>{e.idea}</div>
+              {e.result&&<div style={{fontSize:10,color:"var(--t2)",marginTop:2}}>→ {e.result}</div>}
+              <div style={{fontSize:9,color:"var(--t3)",marginTop:2}}>{e.date}</div>
+            </div>)}
+          </div>
+        </div>}/>
+
+        <Card ch={<div>
+          <SL ch="Mentor quest (+300 Builder XP)"/>
+          {S.startup.mentor?<div style={{fontSize:11}}>Mentor: <span style={{color:"#1D9E75",fontWeight:500}}>{S.startup.mentor}</span></div>:<div>
+            <div style={{fontSize:10,color:"var(--t2)",marginBottom:7}}>Find one person who has done what you want. One real conversation = massive XP.</div>
+            <div style={{display:"flex",gap:6}}>
+              <input value={mentorInp} onChange={e=>setMentorInp(e.target.value)} placeholder="Name / who you talked to" style={SI({flex:1})}/>
+              <Btn ch="+300 XP" onClick={()=>{if(!mentorInp.trim())return;setS(p=>{let s=addXP(p,"builder",300);s.startup.mentor=mentorInp;return s;});}} color="#1D9E75" style={{fontSize:10}}/>
+            </div>
+          </div>}
+        </div>}/>
+      </div>}
+
+      {/* FINANCE */}
+      {tab==="finance"&&<div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:7,marginBottom:11}}>
+          {[{l:"Income",v:`$${totInc.toFixed(2)}`,c:"#1D9E75"},{l:"Expenses",v:`$${totExp.toFixed(2)}`,c:"#D85A30"},{l:"Balance",v:`$${(totInc-totExp).toFixed(2)}`,c:totInc-totExp>=0?"#1D9E75":"#D85A30"}].map(m=><div key={m.l} style={{background:"var(--bg1)",border:"0.5px solid var(--border)",borderRadius:"var(--radius)",padding:"9px 11px"}}>
+            <div style={{fontSize:9,color:"var(--t3)",marginBottom:2}}>{m.l.toUpperCase()}</div>
+            <div style={{fontSize:15,fontWeight:500,color:m.c}}>{m.v}</div>
+          </div>)}
+        </div>
+
+        <Card ch={<div>
+          <SL ch="War chest — startup fund"/>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:9,color:"var(--t3)",marginBottom:2}}><span>Saved</span><span>${S.finance.warChest.toFixed(2)} / ${S.finance.savingsGoal}</span></div>
+          <XPBar val={S.finance.warChest} max={S.finance.savingsGoal||200} color="#BA7517" h={5}/>
+          <div style={{display:"flex",gap:6,marginTop:7}}>
+            <input id="ci" type="number" placeholder="Add ($)" style={SI({flex:1})}/>
+            <Btn ch="Add (+20 XP)" onClick={()=>{const v=parseFloat(document.getElementById("ci").value);if(v>0){setS(p=>{let s=addXP(p,"strategist",20);s.finance.warChest+=v;return s;});document.getElementById("ci").value="";}}} color="#BA7517" style={{fontSize:10}}/>
+          </div>
+        </div>}/>
+
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9}}>
+          <Card ch={<div>
+            <div style={{fontSize:9,color:"#1D9E75",fontWeight:500,letterSpacing:".08em",marginBottom:7}}>INCOME</div>
+            <input value={incD} onChange={e=>setIncD(e.target.value)} placeholder="Source" style={{...SI(),marginBottom:4}}/>
+            <input value={incA} onChange={e=>setIncA(e.target.value)} placeholder="$" type="number" style={{...SI(),marginBottom:5}}/>
+            <Btn ch="+ Log income" onClick={()=>{if(!incA)return;setS(p=>{let s=addXP(p,"strategist",15);s.finance.income=[...s.finance.income,{desc:incD,amt:incA,date:new Date().toISOString().slice(0,10)}];return s;});setIncD("");setIncA("");}} color="#1D9E75" style={{width:"100%",fontSize:10}}/>
+            <div style={{marginTop:7}}>
+              {S.finance.income.slice(-3).reverse().map((i,x)=><div key={x} style={{fontSize:10,padding:"3px 0",borderBottom:"0.5px solid var(--border)"}}><span style={{color:"#1D9E75"}}>+${i.amt}</span> {i.desc}</div>)}
+            </div>
+          </div>}/>
+          <Card ch={<div>
+            <div style={{fontSize:9,color:"#D85A30",fontWeight:500,letterSpacing:".08em",marginBottom:7}}>EXPENSES</div>
+            <input value={expD} onChange={e=>setExpD(e.target.value)} placeholder="What for" style={{...SI(),marginBottom:4}}/>
+            <input value={expA} onChange={e=>setExpA(e.target.value)} placeholder="$" type="number" style={{...SI(),marginBottom:5}}/>
+            <Btn ch="+ Log expense" onClick={()=>{if(!expA)return;setS(p=>{let s=addXP(p,"strategist",5);s.finance.expenses=[...s.finance.expenses,{desc:expD,amt:expA,date:new Date().toISOString().slice(0,10)}];return s;});setExpD("");setExpA("");}} color="#D85A30" style={{width:"100%",fontSize:10}}/>
+            <div style={{marginTop:7}}>
+              {S.finance.expenses.slice(-3).reverse().map((i,x)=><div key={x} style={{fontSize:10,padding:"3px 0",borderBottom:"0.5px solid var(--border)"}}><span style={{color:"#D85A30"}}>-${i.amt}</span> {i.desc}</div>)}
+            </div>
+          </div>}/>
+        </div>
+      </div>}
+
+      {/* WELLBEING */}
+      {tab==="wellbeing"&&<div>
+        <Card ch={<div>
+          <SL ch="Mood tracker — private, not shown in stats"/>
+          <div style={{display:"flex",gap:3,alignItems:"flex-end",height:34,marginBottom:4}}>
+            {S.mood.slice(-14).map((m,i)=><div key={i} style={{flex:1,background:`rgba(127,119,221,${.12+.7*(m.val/5)})`,borderRadius:"2px 2px 0 0",height:`${(m.val/5)*32}px`,border:"0.5px solid rgba(127,119,221,.18)"}} title={`${m.date}: ${m.val}/5`}/>)}
+            {S.mood.length===0&&<div style={{fontSize:10,color:"var(--t3)",paddingBottom:4}}>No mood data yet.</div>}
+          </div>
+          {S.mood.length>=5&&(()=>{const avg=S.mood.slice(-5).reduce((s,m)=>s+m.val,0)/5;return avg<2.5?<div style={{padding:"7px 9px",background:"#D85A3011",border:"0.5px solid #D85A3030",borderRadius:"var(--radius)",fontSize:10,color:"#D85A30",marginBottom:8}}>⚠️ Low mood ({avg.toFixed(1)}/5 avg). Consider reducing quest load this week.</div>:null;})()}
+          <div style={{display:"flex",gap:7,alignItems:"center",marginTop:10}}>
+            <span style={{fontSize:10,color:"var(--t2)"}}>Today:</span>
+            {[1,2,3,4,5].map(v=><div key={v} onClick={()=>setMoodV(v)} style={{width:28,height:28,borderRadius:"50%",cursor:"pointer",background:moodV===v?"#7F77DD":"var(--bg2)",border:`0.5px solid ${moodV===v?"#7F77DD":"var(--border2)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,transition:"all .15s"}}>
+              {["","😔","😕","😐","🙂","😊"][v]}
+            </div>)}
+            <Btn ch="Log" onClick={()=>mut(p=>({...p,mood:[...p.mood,{date:new Date().toISOString().slice(0,10),val:moodV}]}))} color="#7F77DD" style={{fontSize:10,marginLeft:3}}/>
+          </div>
+        </div>}/>
+
+        <Card ch={<div>
+          <SL ch="Daily win log"/>
+          <div style={{fontSize:10,color:"var(--t2)",marginBottom:7}}>One small win per day. Trains your brain to notice progress, not just gaps.</div>
+          <div style={{display:"flex",gap:6,marginBottom:9}}>
+            <input value={winTxt} onChange={e=>setWinTxt(e.target.value)} onKeyDown={e=>e.key==="Enter"&&winTxt.trim()&&(mut(p=>({...p,wins:[...p.wins,{date:new Date().toISOString().slice(0,10),text:winTxt}]})),setWinTxt(""))} placeholder="One win from today…" style={SI({flex:1})}/>
+            <Btn ch="Log" onClick={()=>{if(!winTxt.trim())return;mut(p=>({...p,wins:[...p.wins,{date:new Date().toISOString().slice(0,10),text:winTxt}]}));setWinTxt("");}} color="#1D9E75" style={{fontSize:10}}/>
+          </div>
+          {S.wins.slice(-6).reverse().map((w,i)=><div key={i} style={{display:"flex",gap:7,padding:"4px 0",borderBottom:"0.5px solid var(--border)",fontSize:10}}>
+            <span style={{color:"#1D9E75",flexShrink:0}}>✓</span>
+            <span style={{flex:1}}>{w.text}</span>
+            <span style={{color:"var(--t3)",flexShrink:0}}>{w.date}</span>
+          </div>)}
+        </div>}/>
+
+        <Card ch={<div>
+          <SL ch="Reading XP"/>
+          <div style={{display:"grid",gridTemplateColumns:"2fr 1fr auto",gap:5,marginBottom:9}}>
+            <input value={readTit} onChange={e=>setReadTit(e.target.value)} placeholder="Book / article title" style={SI()}/>
+            <select value={readStat} onChange={e=>setReadStat(e.target.value)} style={SI()}>
+              {Object.entries(STAT_META).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
+            </select>
+            <Btn ch="+25 XP" onClick={()=>{if(!readTit.trim())return;setS(prev=>{let s=addXP(prev,readStat,25);s.reading=[...s.reading,{date:new Date().toISOString().slice(0,10),title:readTit,stat:readStat,xp:25}];return s;});setReadTit("");}} color="#378ADD" style={{fontSize:10,padding:"7px 13px"}}/>
+          </div>
+          {S.reading.slice(-5).reverse().map((r,i)=><div key={i} style={{display:"flex",gap:7,padding:"4px 0",borderBottom:"0.5px solid var(--border)",fontSize:10}}>
+            <span>📖</span>
+            <span style={{flex:1}}>{r.title}</span>
+            <span style={{color:STAT_META[r.stat]?.color,flexShrink:0}}>+{r.xp} {STAT_META[r.stat]?.label}</span>
+          </div>)}
+        </div>}/>
+      </div>}
+
+      {/* ANALYTICS */}
+      {tab==="analytics"&&<div>
+        <Card ch={<div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:12}}>
+            <div style={{background:"var(--bg2)",borderRadius:"var(--radius)",padding:"9px 11px"}}>
+              <div style={{fontSize:9,color:"var(--t3)",marginBottom:2}}>SEASON</div>
+              <div style={{fontSize:12,fontWeight:500,color:"#BA7517"}}>{S.season.name}</div>
+              <div style={{fontSize:10,color:"var(--t2)",marginTop:2}}>{S.season.theme}</div>
+            </div>
+            <div style={{background:"var(--bg2)",borderRadius:"var(--radius)",padding:"9px 11px"}}>
+              <div style={{fontSize:9,color:"var(--t3)",marginBottom:2}}>CHARACTER</div>
+              <div style={{fontSize:12,fontWeight:500,color:"#7F77DD"}}>Lvl {avgLvl} — {title}</div>
+              <div style={{fontSize:10,color:"var(--t2)",marginTop:2}}>{S.character.totalXP.toLocaleString()} total XP</div>
+            </div>
+          </div>
+          <SL ch="Stat levels — season progress"/>
+          {Object.entries(S.stats).map(([k,v])=><div key={k} style={{marginBottom:6}}>
+            <div style={{display:"flex",justifyContent:"space-between",fontSize:10,marginBottom:2}}>
+              <span style={{color:"var(--t2)"}}>{STAT_META[k].label}</span>
+              <span style={{color:STAT_META[k].color}}>Lvl {v.level}</span>
+            </div>
+            <XPBar val={v.level} max={10} color={STAT_META[k].color} h={4}/>
+          </div>)}
+        </div>}/>
+
+        <Card ch={<div><SL ch="Activity heatmap"/><Heatmap heatmap={S.heatmap}/></div>}/>
+
+        <Card ch={<div>
+          <SL ch="All-time snapshot"/>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:7}}>
+            {[{l:"Total XP",v:S.character.totalXP.toLocaleString(),c:"#7F77DD"},{l:"Coins",v:S.character.coins,c:"#1D9E75"},{l:"Streak",v:`${S.habits.streak}d`,c:"#BA7517"},{l:"Experiments",v:S.startup.experiments.length,c:"#1D9E75"},{l:"Wins logged",v:S.wins.length,c:"#D4537E"},{l:"Books read",v:S.reading.length,c:"#378ADD"}].map(m=><div key={m.l} style={{background:"var(--bg2)",borderRadius:"var(--radius)",padding:"9px 11px"}}>
+              <div style={{fontSize:9,color:"var(--t3)",marginBottom:2}}>{m.l.toUpperCase()}</div>
+              <div style={{fontSize:15,fontWeight:500,color:m.c}}>{m.v}</div>
+            </div>)}
+          </div>
+        </div>}/>
+
+        <Card ch={<div>
+          <SL ch="Startup snapshot"/>
+          <div style={{marginBottom:9}}><div style={{fontSize:10,color:"var(--t2)",marginBottom:2}}>Current stage</div><div style={{fontSize:13,fontWeight:500,color:"#1D9E75"}}>{S.startup.stages[S.startup.stage]}</div></div>
+          <StartupTree startup={S.startup}/>
+        </div>}/>
+
+        <Card ch={<div>
+          <SL ch="Season settings"/>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
+            <div><div style={{fontSize:10,color:"var(--t3)",marginBottom:4}}>SEASON NAME</div>
+            <input value={S.season.name} onChange={e=>mut(p=>({...p,season:{...p.season,name:e.target.value}}))} style={SI()}/></div>
+            <div><div style={{fontSize:10,color:"var(--t3)",marginBottom:4}}>THEME</div>
+            <input value={S.season.theme} onChange={e=>mut(p=>({...p,season:{...p.season,theme:e.target.value}}))} style={SI()}/></div>
+          </div>
+        </div>}/>
+      </div>}
+
+      {/* AGENT */}
+      {tab==="agent"&&<div>
+        <Card ch={<div>
+          <div style={{fontSize:12,fontWeight:500,marginBottom:3}}>System Agent — powered by Claude</div>
+          <div style={{fontSize:10,color:"var(--t2)",lineHeight:1.65}}>Full read/write access to your game state. Can answer anything, apply XP, add quests, update stats, evolve the system, set boss fight dates, log mood, and modify any part of your OS in real time.</div>
+        </div>}/>
+        <Card ch={<Agent state={S} onMut={onMut}/>} style={{padding:"12px 14px"}}/>
+      </div>}
+
+    </div>
+  </div>;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

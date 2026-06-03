@@ -1,0 +1,368 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+.nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px}
+.nav button{font-size:12px;padding:5px 12px;border-radius:20px;border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-secondary);cursor:pointer;transition:all .15s}
+.nav button.active{background:var(--color-background-info);color:var(--color-text-info);border-color:var(--color-border-info)}
+.section{display:none}.section.active{display:block}
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;margin-bottom:12px}
+.card-title{font-size:15px;font-weight:500;color:var(--color-text-primary);margin-bottom:4px}
+.card-sub{font-size:12px;color:var(--color-text-secondary);line-height:1.5}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.stat-card{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:14px 16px}
+.stat-label{font-size:11px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.stat-val{font-size:22px;font-weight:500;color:var(--color-text-primary)}
+.stat-sub{font-size:11px;color:var(--color-text-secondary);margin-top:3px}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:3px 9px;border-radius:12px}
+.badge-purple{background:#EEEDFE;color:#3C3489}
+.badge-teal{background:#E1F5EE;color:#085041}
+.badge-amber{background:#FAEEDA;color:#633806}
+.badge-coral{background:#FAECE7;color:#712B13}
+.badge-blue{background:#E6F1FB;color:#0C447C}
+.badge-green{background:#EAF3DE;color:#27500A}
+.badge-gray{background:#F1EFE8;color:#444441}
+.badge-pink{background:#FBEAF0;color:#72243E}
+.xp-bar-wrap{background:var(--color-border-tertiary);border-radius:4px;height:8px;overflow:hidden;margin:6px 0}
+.xp-bar{height:100%;border-radius:4px;transition:width .4s ease}
+.xp-purple{background:#7F77DD}
+.xp-teal{background:#1D9E75}
+.xp-amber{background:#BA7517}
+.xp-coral{background:#D85A30}
+.xp-blue{background:#378ADD}
+.xp-green{background:#639922}
+.xp-pink{background:#D4537E}
+.section-label{font-size:11px;font-weight:500;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.06em;margin:20px 0 8px}
+.rule-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.rule-row:last-child{border-bottom:none}
+.rule-icon{font-size:16px;color:var(--color-text-secondary);flex-shrink:0;margin-top:1px}
+.rule-text{font-size:13px;color:var(--color-text-primary);line-height:1.5}
+.rule-sub{font-size:11px;color:var(--color-text-secondary);margin-top:2px}
+.quest-item{padding:10px 0;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:flex-start;gap:10px}
+.quest-item:last-child{border-bottom:none}
+.quest-name{font-size:13px;font-weight:500;color:var(--color-text-primary)}
+.quest-desc{font-size:11px;color:var(--color-text-secondary);margin-top:2px}
+.xp-pill{font-size:11px;font-weight:500;background:var(--color-background-warning);color:var(--color-text-warning);padding:2px 8px;border-radius:10px;white-space:nowrap;margin-left:auto;flex-shrink:0}
+.tab-header{font-size:16px;font-weight:500;color:var(--color-text-primary);margin-bottom:4px}
+.tab-desc{font-size:13px;color:var(--color-text-secondary);margin-bottom:16px;line-height:1.5}
+.divider{border:none;border-top:0.5px solid var(--color-border-tertiary);margin:16px 0}
+.level-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.level-row:last-child{border-bottom:none}
+.level-num{font-size:18px;font-weight:500;width:36px;color:var(--color-text-primary)}
+.level-info{flex:1}
+.level-name{font-size:13px;font-weight:500;color:var(--color-text-primary)}
+.level-xp{font-size:11px;color:var(--color-text-secondary)}
+.level-unlock{font-size:11px;color:var(--color-text-tertiary);margin-top:2px}
+.warn-box{background:var(--color-background-warning);border:0.5px solid var(--color-border-warning);border-radius:var(--border-radius-md);padding:10px 14px;font-size:12px;color:var(--color-text-warning);line-height:1.5;margin-bottom:12px}
+.tip-box{background:var(--color-background-success);border:0.5px solid var(--color-border-success);border-radius:var(--border-radius-md);padding:10px 14px;font-size:12px;color:var(--color-text-success);line-height:1.5;margin-bottom:12px}
+</style>
+
+<h2 class="sr-only">Complete gamification system for a high school student — character stats, XP economy, quest types, leveling, habits, and anti-burnout rules</h2>
+
+<div style="padding:1rem 0">
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+  <div style="width:48px;height:48px;border-radius:50%;background:#EEEDFE;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:500;color:#3C3489">S</div>
+  <div>
+    <div style="font-size:18px;font-weight:500;color:var(--color-text-primary)">The Founder's Path</div>
+    <div style="font-size:12px;color:var(--color-text-secondary)">A complete gamification OS for your little brother</div>
+  </div>
+</div>
+
+<nav class="nav" role="tablist">
+  <button class="active" onclick="show('char')"><i class="ti ti-user" aria-hidden="true"></i> Character</button>
+  <button onclick="show('xp')"><i class="ti ti-star" aria-hidden="true"></i> XP Economy</button>
+  <button onclick="show('quests')"><i class="ti ti-list-check" aria-hidden="true"></i> Quest Board</button>
+  <button onclick="show('levels')"><i class="ti ti-trending-up" aria-hidden="true"></i> Levels</button>
+  <button onclick="show('habits')"><i class="ti ti-repeat" aria-hidden="true"></i> Daily Habits</button>
+  <button onclick="show('rewards')"><i class="ti ti-gift" aria-hidden="true"></i> Rewards</button>
+  <button onclick="show('rules')"><i class="ti ti-shield" aria-hidden="true"></i> Rules</button>
+</nav>
+
+<div id="char" class="section active">
+  <div class="tab-header">Character Sheet</div>
+  <div class="tab-desc">He has 7 core stats. Each one levels up independently. The overall character level is the average of all 7.</div>
+
+  <div class="grid3">
+    <div class="stat-card">
+      <div class="stat-label">Intellect</div>
+      <div class="stat-val">Lvl 1</div>
+      <div class="xp-bar-wrap"><div class="xp-bar xp-purple" style="width:10%"></div></div>
+      <div class="stat-sub">Exams, SAT, IELTS, school</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Builder</div>
+      <div class="stat-val">Lvl 1</div>
+      <div class="xp-bar-wrap"><div class="xp-bar xp-teal" style="width:10%"></div></div>
+      <div class="stat-sub">Startup, projects, products</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Mastery</div>
+      <div class="stat-val">Lvl 1</div>
+      <div class="xp-bar-wrap"><div class="xp-bar xp-blue" style="width:10%"></div></div>
+      <div class="stat-sub">Coding, languages, certs</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Warrior</div>
+      <div class="stat-val">Lvl 1</div>
+      <div class="xp-bar-wrap"><div class="xp-bar xp-coral" style="width:10%"></div></div>
+      <div class="stat-sub">Fitness, football, workouts</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Strategist</div>
+      <div class="stat-val">Lvl 1</div>
+      <div class="xp-bar-wrap"><div class="xp-bar xp-amber" style="width:10%"></div></div>
+      <div class="stat-sub">Finance, planning, goals</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Gladiator</div>
+      <div class="stat-val">Lvl 1</div>
+      <div class="xp-bar-wrap"><div class="xp-bar xp-pink" style="width:10%"></div></div>
+      <div class="stat-sub">Olympiads, hackathons, comp.</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Vitality</div>
+      <div class="stat-val">Lvl 1</div>
+      <div class="xp-bar-wrap"><div class="xp-bar xp-green" style="width:10%"></div></div>
+      <div class="stat-sub">Sleep, habits, mental health</div>
+    </div>
+  </div>
+
+  <div class="section-label">How stats work</div>
+  <div class="card">
+    <div class="rule-row">
+      <i class="ti ti-bolt rule-icon" aria-hidden="true"></i>
+      <div><div class="rule-text">Each stat has its own XP pool and level (1–10)</div><div class="rule-sub">You can be Intellect Lvl 6 and Warrior Lvl 2 — asymmetry is fine and expected</div></div>
+    </div>
+    <div class="rule-row">
+      <i class="ti ti-award rule-icon" aria-hidden="true"></i>
+      <div><div class="rule-text">Overall Character Level = average of all 7 stats (round down)</div><div class="rule-sub">This is what he shows off. A Lvl 4 is serious. A Lvl 7 is legendary at his age.</div></div>
+    </div>
+    <div class="rule-row">
+      <i class="ti ti-lock-open rule-icon" aria-hidden="true"></i>
+      <div><div class="rule-text">Stats unlock new quest tiers and rewards at key thresholds</div><div class="rule-sub">Builder Lvl 3 unlocks "startup arc" quests. Gladiator Lvl 4 unlocks olympiad boss mode.</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="xp" class="section">
+  <div class="tab-header">XP Economy</div>
+  <div class="tab-desc">Every action earns XP in a specific stat. The amounts are calibrated so big achievements feel BIG, and daily habits feel consistent.</div>
+
+  <div class="section-label">Daily actions (Vitality + target stat)</div>
+  <div class="card">
+    <div class="quest-item"><i class="ti ti-clock rule-icon" aria-hidden="true"></i><div><div class="quest-name">25-min deep work block (Pomodoro)</div><div class="quest-desc">No phone, full focus on one subject or task</div></div><div class="xp-pill">+10 XP</div></div>
+    <div class="quest-item"><i class="ti ti-repeat rule-icon" aria-hidden="true"></i><div><div class="quest-name">Complete a daily habit</div><div class="quest-desc">Any habit from his daily list</div></div><div class="xp-pill">+5 XP</div></div>
+    <div class="quest-item"><i class="ti ti-moon rule-icon" aria-hidden="true"></i><div><div class="quest-name">Sleep 7+ hours (tracked next morning)</div><div class="quest-desc">Restores Vitality; also adds to tomorrow's Focus bonus</div></div><div class="xp-pill">+15 XP</div></div>
+    <div class="quest-item"><i class="ti ti-run rule-icon" aria-hidden="true"></i><div><div class="quest-name">Workout session (30+ min)</div><div class="quest-desc">Gym, football, run — any intentional physical effort</div></div><div class="xp-pill">+20 XP</div></div>
+    <div class="quest-item"><i class="ti ti-book rule-icon" aria-hidden="true"></i><div><div class="quest-name">Study session (60+ min on one subject)</div><div class="quest-desc">Goes toward Intellect or Mastery depending on topic</div></div><div class="xp-pill">+25 XP</div></div>
+  </div>
+
+  <div class="section-label">Milestones (big one-time XP drops)</div>
+  <div class="card">
+    <div class="quest-item"><i class="ti ti-certificate rule-icon" aria-hidden="true"></i><div><div class="quest-name">Pass IELTS / SAT (any band/score)</div><div class="quest-desc">Counts for Intellect + Mastery</div></div><div class="xp-pill">+500 XP</div></div>
+    <div class="quest-item"><i class="ti ti-certificate rule-icon" aria-hidden="true"></i><div><div class="quest-name">Pass IELTS / SAT with target score</div><div class="quest-desc">Personal target set in advance</div></div><div class="xp-pill">+800 XP</div></div>
+    <div class="quest-item"><i class="ti ti-trophy rule-icon" aria-hidden="true"></i><div><div class="quest-name">Win / place in an olympiad or hackathon</div><div class="quest-desc">Any placement (3rd, 2nd, 1st = scaled)</div></div><div class="xp-pill">+300–700 XP</div></div>
+    <div class="quest-item"><i class="ti ti-building-store rule-icon" aria-hidden="true"></i><div><div class="quest-name">Launch a startup MVP (real users)</div><div class="quest-desc">Counts massively toward Builder stat</div></div><div class="xp-pill">+600 XP</div></div>
+    <div class="quest-item"><i class="ti ti-school rule-icon" aria-hidden="true"></i><div><div class="quest-name">Get accepted to target university</div><div class="quest-desc">The "final boss" — multi-stat bonus</div></div><div class="xp-pill">+2000 XP</div></div>
+    <div class="quest-item"><i class="ti ti-coin rule-icon" aria-hidden="true"></i><div><div class="quest-name">First cash earned (startup or prize)</div><div class="quest-desc">Any amount that hits a real wallet</div></div><div class="xp-pill">+400 XP</div></div>
+    <div class="quest-item"><i class="ti ti-brand-github rule-icon" aria-hidden="true"></i><div><div class="quest-name">Complete a 30-day coding challenge</div><div class="quest-desc">Consecutive days with a public log</div></div><div class="xp-pill">+200 XP</div></div>
+  </div>
+
+  <div class="section-label">Bonus XP multipliers</div>
+  <div class="card">
+    <div class="rule-row"><i class="ti ti-flame rule-icon" aria-hidden="true"></i><div><div class="rule-text">7-day habit streak: 1.5x XP on all habits that week</div></div></div>
+    <div class="rule-row"><i class="ti ti-flame rule-icon" aria-hidden="true"></i><div><div class="rule-text">30-day streak: 2x XP on all habits that month</div></div></div>
+    <div class="rule-row"><i class="ti ti-sword rule-icon" aria-hidden="true"></i><div><div class="rule-text">Dungeon clear (4 pomodoros with no phone): +50 bonus XP</div></div></div>
+    <div class="rule-row"><i class="ti ti-moon-stars rule-icon" aria-hidden="true"></i><div><div class="rule-text">Perfect sleep week (7 nights, 7+ hrs): +100 Vitality XP</div></div></div>
+  </div>
+</div>
+
+<div id="quests" class="section">
+  <div class="tab-header">Quest Board</div>
+  <div class="tab-desc">Life is divided into quest tiers. Main Quests are the big arcs. Side Quests are weekly. Daily Quests reset every day. Boss Fights are rare, high-stakes events.</div>
+
+  <div class="section-label">Main quests (active arcs)</div>
+  <div class="card">
+    <div class="quest-item">
+      <span class="badge badge-purple" style="flex-shrink:0">ARC 1</span>
+      <div><div class="quest-name">The Certificate Grind</div><div class="quest-desc">Reach IELTS 7.0+ and SAT 1400+ — two milestones that unlock the university application arc</div></div>
+    </div>
+    <div class="quest-item">
+      <span class="badge badge-teal" style="flex-shrink:0">ARC 2</span>
+      <div><div class="quest-name">The First Build</div><div class="quest-desc">Take one startup idea from concept → MVP → first real user. Unlock Builder stat tier 2.</div></div>
+    </div>
+    <div class="quest-item">
+      <span class="badge badge-blue" style="flex-shrink:0">ARC 3</span>
+      <div><div class="quest-name">Codebreaker</div><div class="quest-desc">Reach a defined coding skill level (e.g. complete a full-stack project or a CS50-level course)</div></div>
+    </div>
+    <div class="quest-item">
+      <span class="badge badge-pink" style="flex-shrink:0">ARC 4</span>
+      <div><div class="quest-name">Arena Entry</div><div class="quest-desc">Compete in at least 2 olympiads or hackathons this year — placement doesn't matter, participation does</div></div>
+    </div>
+    <div class="quest-item">
+      <span class="badge badge-coral" style="flex-shrink:0">ARC 5</span>
+      <div><div class="quest-name">Body of a Founder</div><div class="quest-desc">Hit a consistent fitness baseline: 3x workouts/week for 8 consecutive weeks</div></div>
+    </div>
+  </div>
+
+  <div class="section-label">Weekly side quests (pick 3–5 per week)</div>
+  <div class="card">
+    <div class="quest-item"><i class="ti ti-pencil rule-icon" aria-hidden="true"></i><div><div class="quest-name">Complete one full past exam paper</div></div><div class="xp-pill">+40 XP</div></div>
+    <div class="quest-item"><i class="ti ti-vocabulary rule-icon" aria-hidden="true"></i><div><div class="quest-name">Learn 50 new IELTS/SAT vocabulary words</div></div><div class="xp-pill">+30 XP</div></div>
+    <div class="quest-item"><i class="ti ti-code rule-icon" aria-hidden="true"></i><div><div class="quest-name">Build one small coding feature or solve 5 LeetCode problems</div></div><div class="xp-pill">+35 XP</div></div>
+    <div class="quest-item"><i class="ti ti-file-text rule-icon" aria-hidden="true"></i><div><div class="quest-name">Write one page about startup idea (problem, solution, market)</div></div><div class="xp-pill">+30 XP</div></div>
+    <div class="quest-item"><i class="ti ti-wallet rule-icon" aria-hidden="true"></i><div><div class="quest-name">Log all spending for the week + weekly budget review</div></div><div class="xp-pill">+20 XP</div></div>
+    <div class="quest-item"><i class="ti ti-ball-football rule-icon" aria-hidden="true"></i><div><div class="quest-name">Play football or complete 2+ workout sessions</div></div><div class="xp-pill">+30 XP</div></div>
+    <div class="quest-item"><i class="ti ti-bulb rule-icon" aria-hidden="true"></i><div><div class="quest-name">Research one competition / scholarship to apply to</div></div><div class="xp-pill">+25 XP</div></div>
+  </div>
+
+  <div class="section-label">Boss fights (rare, pre-announced events)</div>
+  <div class="card">
+    <div class="quest-item"><span class="badge badge-coral" style="flex-shrink:0">BOSS</span><div><div class="quest-name">Exam Day</div><div class="quest-desc">Full preparation arc → show up → perform. XP scales with score vs personal best.</div></div><div class="xp-pill">+200–800 XP</div></div>
+    <div class="quest-item"><span class="badge badge-pink" style="flex-shrink:0">BOSS</span><div><div class="quest-name">Hackathon / Olympiad</div><div class="quest-desc">Register, prepare, compete. Win or lose, just competing earns the base XP.</div></div><div class="xp-pill">+150–700 XP</div></div>
+    <div class="quest-item"><span class="badge badge-purple" style="flex-shrink:0">BOSS</span><div><div class="quest-name">University Application Deadline</div><div class="quest-desc">Submit a complete, polished application. Essays, recommendations, transcripts — all in.</div></div><div class="xp-pill">+500 XP</div></div>
+    <div class="quest-item"><span class="badge badge-teal" style="flex-shrink:0">BOSS</span><div><div class="quest-name">Startup Pitch (investor, competition, or school)</div><div class="quest-desc">Present the idea publicly to real people for the first time.</div></div><div class="xp-pill">+300 XP</div></div>
+  </div>
+</div>
+
+<div id="levels" class="section">
+  <div class="tab-header">Level Progression</div>
+  <div class="tab-desc">Each stat has 10 levels. XP required scales up. Each level unlock something real — a new privilege, a new quest tier, or a reward.</div>
+
+  <div class="section-label">Overall character levels</div>
+  <div class="card">
+    <div class="level-row"><div class="level-num">1</div><div class="level-info"><div class="level-name">Recruit</div><div class="level-xp">0 – 500 total XP</div><div class="level-unlock">Unlock: System starts. Choose your first Main Quest arc.</div></div></div>
+    <div class="level-row"><div class="level-num">2</div><div class="level-info"><div class="level-name">Apprentice</div><div class="level-xp">500 – 1,500 XP</div><div class="level-unlock">Unlock: Weekly quest board opens. Streak bonuses activate.</div></div></div>
+    <div class="level-row"><div class="level-num">3</div><div class="level-info"><div class="level-name">Journeyman</div><div class="level-xp">1,500 – 3,500 XP</div><div class="level-unlock">Unlock: Choose a real reward from the rewards shop.</div></div></div>
+    <div class="level-row"><div class="level-num">4</div><div class="level-info"><div class="level-name">Specialist</div><div class="level-xp">3,500 – 7,000 XP</div><div class="level-unlock">Unlock: New arc quests open. System review with you.</div></div></div>
+    <div class="level-row"><div class="level-num">5</div><div class="level-info"><div class="level-name">Expert</div><div class="level-xp">7,000 – 12,000 XP</div><div class="level-unlock">Unlock: Big reward (phone, sneakers, trip — agreed in advance).</div></div></div>
+    <div class="level-row"><div class="level-num">6</div><div class="level-info"><div class="level-name">Veteran</div><div class="level-xp">12,000 – 20,000 XP</div><div class="level-unlock">Unlock: Custom reward. System evolution discussion.</div></div></div>
+    <div class="level-row"><div class="level-num">7</div><div class="level-info"><div class="level-name">Elite</div><div class="level-xp">20,000 – 35,000 XP</div><div class="level-unlock">Unlock: Rare, meaningful milestone reward. He picks.</div></div></div>
+    <div class="level-row"><div class="level-num">8–10</div><div class="level-info"><div class="level-name">Legend / Founder / Immortal</div><div class="level-xp">35,000+ XP</div><div class="level-unlock">Unlock: These are university years. New game starts.</div></div></div>
+  </div>
+
+  <div class="section-label">Stat-specific level unlocks (example: Builder)</div>
+  <div class="card">
+    <div class="rule-row"><i class="ti ti-lock-open rule-icon" aria-hidden="true"></i><div><div class="rule-text">Builder Lvl 2 — Unlock startup journal quest (weekly)</div></div></div>
+    <div class="rule-row"><i class="ti ti-lock-open rule-icon" aria-hidden="true"></i><div><div class="rule-text">Builder Lvl 3 — Unlock first pitch boss quest</div></div></div>
+    <div class="rule-row"><i class="ti ti-lock-open rule-icon" aria-hidden="true"></i><div><div class="rule-text">Builder Lvl 5 — Unlock "startup advisor session" reward</div></div></div>
+    <div class="rule-row"><i class="ti ti-lock-open rule-icon" aria-hidden="true"></i><div><div class="rule-text">Gladiator Lvl 2 — Unlock olympiad prep quests</div></div></div>
+    <div class="rule-row"><i class="ti ti-lock-open rule-icon" aria-hidden="true"></i><div><div class="rule-text">Intellect Lvl 3 — Unlock "exam dungeon" mode (timed mock sessions)</div></div></div>
+    <div class="rule-row"><i class="ti ti-lock-open rule-icon" aria-hidden="true"></i><div><div class="rule-text">Mastery Lvl 3 — Unlock certificate boss quest (IELTS/SAT attempt)</div></div></div>
+  </div>
+</div>
+
+<div id="habits" class="section">
+  <div class="tab-header">Daily Habit Stack</div>
+  <div class="tab-desc">Since he's completely unorganized right now, the daily system must be simple. Start with Week 1 habits only. Add more only after 14 days of consistency.</div>
+
+  <div class="warn-box"><i class="ti ti-alert-triangle" aria-hidden="true"></i> Don't give him all 20 habits at once. Overwhelm is the #1 reason systems fail in week 2. Start with the Week 1 stack below — just 4 habits. That's it.</div>
+
+  <div class="section-label">Week 1–2: The core 4 (non-negotiable)</div>
+  <div class="card">
+    <div class="quest-item"><span class="badge badge-teal" style="flex-shrink:0;min-width:60px">Morning</span><div><div class="quest-name">Plan the day (5 min, phone or paper)</div><div class="quest-desc">Write 3 things to do today. Just 3.</div></div><div class="xp-pill">+5 XP</div></div>
+    <div class="quest-item"><span class="badge badge-purple" style="flex-shrink:0;min-width:60px">Daytime</span><div><div class="quest-name">1 deep work block (25 min, Pomodoro)</div><div class="quest-desc">Any subject or project. Phone in another room.</div></div><div class="xp-pill">+10 XP</div></div>
+    <div class="quest-item"><span class="badge badge-amber" style="flex-shrink:0;min-width:60px">Evening</span><div><div class="quest-name">Log what got done today (2 min)</div><div class="quest-desc">A simple "done / not done" on his 3 things. This builds reflection.</div></div><div class="xp-pill">+5 XP</div></div>
+    <div class="quest-item"><span class="badge badge-green" style="flex-shrink:0;min-width:60px">Night</span><div><div class="quest-name">Lights out by midnight</div><div class="quest-desc">Phone charger outside bedroom if possible. Earns Vitality XP next morning.</div></div><div class="xp-pill">+15 XP</div></div>
+  </div>
+
+  <div class="section-label">Week 3–4: Add these 3</div>
+  <div class="card">
+    <div class="quest-item"><i class="ti ti-code rule-icon" aria-hidden="true"></i><div><div class="quest-name">15 min coding / skill practice</div><div class="quest-desc">Duolingo, LeetCode, a tutorial — something toward Mastery</div></div><div class="xp-pill">+10 XP</div></div>
+    <div class="quest-item"><i class="ti ti-wallet rule-icon" aria-hidden="true"></i><div><div class="quest-name">Log any money spent today</div><div class="quest-desc">Just write it down — builds Strategist stat over time</div></div><div class="xp-pill">+5 XP</div></div>
+    <div class="quest-item"><i class="ti ti-run rule-icon" aria-hidden="true"></i><div><div class="quest-name">Physical movement (15 min minimum)</div><div class="quest-desc">Walk, football drill, gym — anything. Counts 3x per week minimum.</div></div><div class="xp-pill">+15 XP</div></div>
+  </div>
+
+  <div class="section-label">Month 2+: Full daily stack</div>
+  <div class="card">
+    <div class="tip-box">Only introduce these after Week 1–4 habits are solid for 14+ consecutive days</div>
+    <div class="quest-item"><i class="ti ti-book rule-icon" aria-hidden="true"></i><div><div class="quest-name">2+ Pomodoro blocks (replaces the 1-block habit)</div></div><div class="xp-pill">+20 XP</div></div>
+    <div class="quest-item"><i class="ti ti-pencil rule-icon" aria-hidden="true"></i><div><div class="quest-name">Weekly review (Sunday, 20 min)</div><div class="quest-desc">What quests did I complete? What's next? XP tally update.</div></div><div class="xp-pill">+50 XP</div></div>
+    <div class="quest-item"><i class="ti ti-building-store rule-icon" aria-hidden="true"></i><div><div class="quest-name">Startup journal entry (1 idea, problem, or experiment)</div></div><div class="xp-pill">+15 XP</div></div>
+  </div>
+</div>
+
+<div id="rewards" class="section">
+  <div class="tab-header">Reward Shop</div>
+  <div class="tab-desc">Every 500 XP earned = 1 Gold Coin to spend. Coins are the real currency. This separates effort from reward and prevents "I did it for the badge" thinking.</div>
+
+  <div class="section-label">Small rewards (1–3 coins)</div>
+  <div class="card">
+    <div class="rule-row"><i class="ti ti-device-gamepad rule-icon" aria-hidden="true"></i><div><div class="rule-text">2 hours of guilt-free gaming, YouTube or social media</div><div class="rule-sub">1 coin — must be planned in advance, not reactive</div></div></div>
+    <div class="rule-row"><i class="ti ti-coffee rule-icon" aria-hidden="true"></i><div><div class="rule-text">A meal or snack he's been wanting</div><div class="rule-sub">1 coin — a burger, a specific cafe, etc.</div></div></div>
+    <div class="rule-row"><i class="ti ti-shirt rule-icon" aria-hidden="true"></i><div><div class="rule-text">A small clothing or gear item (agreed budget)</div><div class="rule-sub">2 coins — e.g. a pair of socks, a phone case</div></div></div>
+    <div class="rule-row"><i class="ti ti-friends rule-icon" aria-hidden="true"></i><div><div class="rule-text">A day out with friends (no obligations, fully his)</div><div class="rule-sub">2 coins</div></div></div>
+  </div>
+
+  <div class="section-label">Medium rewards (5–10 coins)</div>
+  <div class="card">
+    <div class="rule-row"><i class="ti ti-headphones rule-icon" aria-hidden="true"></i><div><div class="rule-text">A piece of tech or gear he wants (budget ~$30–60)</div><div class="rule-sub">5 coins — earphones, mouse, notebook, etc.</div></div></div>
+    <div class="rule-row"><i class="ti ti-ball-football rule-icon" aria-hidden="true"></i><div><div class="rule-text">Football boots, gym gloves, sports gear</div><div class="rule-sub">6 coins — ties directly to Warrior stat = motivating</div></div></div>
+    <div class="rule-row"><i class="ti ti-map rule-icon" aria-hidden="true"></i><div><div class="rule-text">A day trip or weekend experience</div><div class="rule-sub">8 coins</div></div></div>
+  </div>
+
+  <div class="section-label">Big rewards (level milestones only)</div>
+  <div class="card">
+    <div class="rule-row"><i class="ti ti-device-mobile rule-icon" aria-hidden="true"></i><div><div class="rule-text">New phone / laptop upgrade (Lvl 5 milestone)</div><div class="rule-sub">Agreed upfront. This is the "end of season" reward.</div></div></div>
+    <div class="rule-row"><i class="ti ti-plane rule-icon" aria-hidden="true"></i><div><div class="rule-text">A trip abroad / travel experience (Lvl 7)</div><div class="rule-sub">Something he's never done. Makes leveling feel epic.</div></div></div>
+    <div class="rule-row"><i class="ti ti-building-skyscraper rule-icon" aria-hidden="true"></i><div><div class="rule-text">Startup seed budget (Lvl 6, Builder track)</div><div class="rule-sub">A small real budget to test a business idea with — $50–200</div></div></div>
+  </div>
+</div>
+
+<div id="rules" class="section">
+  <div class="tab-header">System Rules (Anti-Burnout)</div>
+  <div class="tab-desc">These rules keep the system healthy long-term. Without them, gamification turns into anxiety and metric-chasing within 6 weeks.</div>
+
+  <div class="section-label">The most important rule</div>
+  <div class="warn-box"><i class="ti ti-alert-circle" aria-hidden="true"></i> He must set the XP values himself for any new activity. If he doesn't believe the value is fair, the system loses meaning. You propose, he approves.</div>
+
+  <div class="section-label">Streak protection</div>
+  <div class="card">
+    <div class="rule-row"><i class="ti ti-shield rule-icon" aria-hidden="true"></i><div><div class="rule-text">He earns 1 "Revival Potion" every 30 days of consistency</div><div class="rule-sub">Can use it to protect a streak if life genuinely interrupts (illness, travel, emergency)</div></div></div>
+    <div class="rule-row"><i class="ti ti-calendar rule-icon" aria-hidden="true"></i><div><div class="rule-text">One "Rest Day" per week is free — no XP lost, no streak broken</div><div class="rule-sub">Must be declared the evening before. Not a reactive escape hatch.</div></div></div>
+    <div class="rule-row"><i class="ti ti-rotate rule-icon" aria-hidden="true"></i><div><div class="rule-text">After a miss: just restart. No penalty XP.</div><div class="rule-sub">The system never punishes — it only rewards. Missing is zero, not negative.</div></div></div>
+  </div>
+
+  <div class="section-label">Progress review schedule</div>
+  <div class="card">
+    <div class="rule-row"><i class="ti ti-clock rule-icon" aria-hidden="true"></i><div><div class="rule-text">Daily: 2-min log (done vs not done on 3 tasks)</div></div></div>
+    <div class="rule-row"><i class="ti ti-calendar-week rule-icon" aria-hidden="true"></i><div><div class="rule-text">Sunday: 20-min weekly review — tally XP, pick next week's side quests, update stat bars</div></div></div>
+    <div class="rule-row"><i class="ti ti-calendar-month rule-icon" aria-hidden="true"></i><div><div class="rule-text">Monthly: System recalibration — are XP values still fair? Any new quests to add? Coins to spend?</div></div></div>
+    <div class="rule-row"><i class="ti ti-calendar-event rule-icon" aria-hidden="true"></i><div><div class="rule-text">Quarterly: Arc review — which main quests advanced? Which boss fights are coming?</div></div></div>
+  </div>
+
+  <div class="section-label">The 3 deadly sins of gamification</div>
+  <div class="card">
+    <div class="rule-row"><i class="ti ti-x rule-icon" style="color:var(--color-text-danger)" aria-hidden="true"></i><div><div class="rule-text">Never compare his stats to anyone else's</div><div class="rule-sub">Only compare to his own past. This system has no leaderboard.</div></div></div>
+    <div class="rule-row"><i class="ti ti-x rule-icon" style="color:var(--color-text-danger)" aria-hidden="true"></i><div><div class="rule-text">Never make the system feel like another obligation</div><div class="rule-sub">If logging feels like homework, simplify it. The system serves him, not the other way around.</div></div></div>
+    <div class="rule-row"><i class="ti ti-x rule-icon" style="color:var(--color-text-danger)" aria-hidden="true"></i><div><div class="rule-text">Never chase XP over real outcomes</div><div class="rule-sub">If he finds shortcuts that earn XP without learning, fix the XP value — don't scold him.</div></div></div>
+  </div>
+
+  <div class="section-label">Quick-start: Week 1 launch protocol</div>
+  <div class="card">
+    <div class="rule-row"><div style="width:22px;height:22px;border-radius:50%;background:var(--color-background-info);color:var(--color-text-info);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0">1</div><div><div class="rule-text">Sit with him, name his character, fill in his 7 stats at Lvl 1</div></div></div>
+    <div class="rule-row"><div style="width:22px;height:22px;border-radius:50%;background:var(--color-background-info);color:var(--color-text-info);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0">2</div><div><div class="rule-text">Pick exactly ONE main quest arc to activate first (suggest Arc 1: Certificates)</div></div></div>
+    <div class="rule-row"><div style="width:22px;height:22px;border-radius:50%;background:var(--color-background-info);color:var(--color-text-info);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0">3</div><div><div class="rule-text">Set up his daily habit tracker — just the 4 Week 1 habits</div></div></div>
+    <div class="rule-row"><div style="width:22px;height:22px;border-radius:50%;background:var(--color-background-info);color:var(--color-text-info);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0">4</div><div><div class="rule-text">Agree on his first real reward (coins system) — what costs what</div></div></div>
+    <div class="rule-row"><div style="width:22px;height:22px;border-radius:50%;background:var(--color-background-info);color:var(--color-text-info);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0">5</div><div><div class="rule-text">Do the first Sunday review together after 7 days — celebrate the first XP earned</div></div></div>
+  </div>
+
+  <div style="margin-top:8px">
+    <button onclick="sendPrompt('Now build me a Notion template or spreadsheet layout for this gamification system so my brother can actually use it daily')" style="width:100%;padding:10px;font-size:13px;font-weight:500">
+      Build the tracking template for Notion / spreadsheet ↗
+    </button>
+  </div>
+</div>
+
+</div>
+
+<script>
+function show(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
