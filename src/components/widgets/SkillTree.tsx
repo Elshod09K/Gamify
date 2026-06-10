@@ -1,5 +1,5 @@
 import React from 'react';
-import { SkillTree as SkillTreeType, SkillNode } from '../../types';
+import type { SkillTree as SkillTreeType, SkillNode } from '../../types';
 
 interface SkillTreeProps {
   skillTree: SkillTreeType;

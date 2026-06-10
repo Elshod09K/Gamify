@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { User } from '@supabase/supabase-js';
-import { AppState } from '../types';
+import type { User } from '@supabase/supabase-js';
+import type { AppState } from '../types';
 import { INITIAL_STATE } from '../utils/constants';
 import { resetHabitsOnNewDay } from '../utils/xpEngine';
 import { supabase, hasSupabaseKeys } from '../supabaseClient';

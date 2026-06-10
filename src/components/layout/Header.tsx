@@ -1,6 +1,6 @@
 import React from 'react';
 import Pill from '../ui/Pill';
-import { AppState } from '../../types';
+import type { AppState } from '../../types';
 import { getTitle } from '../../utils/xpEngine';
 
 interface HeaderProps {

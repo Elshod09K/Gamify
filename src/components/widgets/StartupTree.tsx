@@ -1,5 +1,5 @@
 import React from 'react';
-import { StartupTracker } from '../../types';
+import type { StartupTracker } from '../../types';
 
 interface StartupTreeProps {
   startup: StartupTracker;

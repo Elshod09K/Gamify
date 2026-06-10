@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import useAuth from './hooks/useAuth';
 import useAppState from './hooks/useAppState';
 import { addXP, applyMutation } from './utils/xpEngine';
-import { AppState, StatKey } from './types';
+import type { AppState, StatKey } from './types';
 import { CLASSES } from './utils/constants';
 import supabase, { hasSupabaseKeys } from './supabaseClient';
 
 // Layout & Atom Components
 import Header from './components/layout/Header';
-import TabBar, { TabType } from './components/layout/TabBar';
+import TabBar, { type TabType } from './components/layout/TabBar';
 import Card from './components/ui/Card';
 import Btn from './components/ui/Btn';
 

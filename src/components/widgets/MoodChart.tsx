@@ -1,5 +1,5 @@
 import React from 'react';
-import { MoodEntry } from '../../types';
+import type { MoodEntry } from '../../types';
 
 interface MoodChartProps {
   moods: MoodEntry[];
